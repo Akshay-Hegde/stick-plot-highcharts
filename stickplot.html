@@ -1,0 +1,195 @@
+<script src="http://code.jquery.com/jquery-1.11.0.min.js"></script>
+<script src="http://code.highcharts.com/highcharts.js"></script>
+<script src="http://code.highcharts.com/modules/exporting.js"></script>
+
+<div id="container" style="min-width: 310px; height: 400px; margin: 0 auto"></div>
+
+<script>
+
+/* Input array 
+		
+   Array = [
+             [ time , u-component, v-component ]
+           ]
+
+*/
+
+var Arr = [ 
+    [1161554220000, 2.211, 3.401],
+    [1161555420000, 2.117, 4.078],
+    [1161556620000, 1.274, 4.693],
+    [1161557820000, 1.472, 4.352],
+    [1161559020000, 1.525, 4.334],
+    [1161560220000, 1.405, 4.936],
+    [1161561420000, 1.149, 5.552],
+    [1161605820000, 0.666, 5.901],
+    [1161607020000, -0.311, 5.93],
+    [1161608220000, -1.19, 6.092],
+    [1161566220000, -1.562, 5.729],
+    [1161567420000, -2.481, 5.395],
+    [1161568620000, -3.794, 3.843],
+    [1161569820000, -3.348, 1.771],
+    [1161571020000, -3.786, 2.092],
+    [1161572220000, -3.685, 1.697],
+    [1161573420000, -3.211, 0.508],
+    [1161574620000, -3.25, 0.014],
+    [1161575820000, -3.216, 0.468],
+    [1161577020000, -3.244, -0.204],
+    [1161578220000, -3.175, -0.695],
+    [1161579420000, -3.228, -0.382],
+    [1161580620000, -3.205, -0.539],
+    [1161581820000, -3.246, -0.165],
+    [1161583020000, -3.187, -0.637],
+    [1161584220000, -3.509, -0.264],
+    [1161585420000, -3.78, -0.238],
+    [1161586620000, -3.787, -0.1],
+    [1161587820000, -4.318, 0.256],
+    [1161589020000, -4.048, 0.265],
+    [1161590220000, -4.325, -0.061],
+    [1161591420000, -5.354, 0.713],
+    [1161592620000, -5.074, 0.771],
+    [1161593820000, -6.517, 1.738],
+    [1161595020000, -5.938, -0.048],
+    [1161596220000, -6.198, 0.329],
+    [1161597420000, -6.446, 0.619],
+    [1161598620000, -6.384, 1.09],
+    [1161599820000, -7.036, 1.877],
+    [1161601020000, -6.583, 2.42],
+    [1161602220000, -8.002, 3.222],
+    [1161603420000, -7.485, 3.067],
+    [1161604620000, -7.272, 2.035],
+    [1161649020000, -6.267, 1.631],
+    [1161650220000, -4.313, 0.335],
+    [1161651420000, -4.323, 0.15],
+    [1161609420000, -4.579, -0.373],
+    [1161610620000, -3.735, -0.629],
+    [1161611820000, -3.978, -0.795],
+    [1161613020000, -3.348, -1.085],
+    [1161614220000, -3.163, -1.542],
+    [1161615420000, -3.555, -1.954],
+    [1161616620000, -2.902, -2.434],
+    [1161617820000, -2.855, -2.058],
+    [1161619020000, -3.538, -2.931],
+    [1161620220000, -3.873, -3.764],
+    [1161621420000, -3.361, -3.878],
+    [1161622620000, -3.221, -4.666],
+    [1161623820000, -2.839, -2.898],
+    [1161625020000, -2.664, -4.068],
+    [1161626220000, -3.662, -5.982],
+    [1161627420000, -4.621, -6.964],
+    [1161628620000, -3.527, -4.439],
+    [1161629820000, -3.221, -4.666],
+    [1161631020000, -3.861, -4.86],
+    [1161632220000, -4.03, -3.595],
+    [1161633420000, -4.201, -3.394],
+    [1161634620000, -4.18, -3.42],
+    [1161635820000, -4.717, -2.63],
+    [1161637020000, -3.685, -2.266],
+    [1161638220000, -3.463, -1.534],
+    [1161639420000, -4.117, -2.039]
+];
+
+	
+// Linear interpolation...
+function lin(x1,x3,y1,y3,x2){return (y1+(x2-x1)*(y3-y1)/(x3-x1));}
+
+// Min max and spacing..
+var max     = Math.max.apply(Math, Arr.map(function(arr) { return arr[0] }));
+var min     = Math.min.apply(Math, Arr.map(function(arr) { return arr[0] }));
+var spacing = (max-min)/Arr.length
+
+var dt = []
+
+$.each(Arr,function(i,j){
+	
+	var obj = (i == 0) ? { id : 'stick', name : 'stick', data : [] }  : { linkedTo : 'stick', name : 'stick', data : [] }
+	
+
+/* If U-component is negative then the stick will point to the left, otherwise to the right.*/
+
+		var newtime = j[1] < 0  ? j[0] - spacing : j[0] + spacing 
+				
+		// Whether less than lower axis limit ?
+		if(newtime < min)
+		{
+			var x1 = newtime, 
+			    y1 = j[2], 
+			    x3 = j[0], 
+			    y3 = 0,
+			    y2 = lin(x1,x3,y1,y3,min),
+		       newtime = min
+			
+		}
+
+		// Whether greater than upper axis limit ?
+	   else if(newtime > max)
+		{
+			var x1 = j[0],
+			    y1 = 0, 
+			    x3 = newtime, 
+			    y3 = j[2],
+			    y2 = lin(x1,x3,y1,y3,min),
+		       newtime = max  
+		}
+
+		// Okay within range
+		else
+		{
+			var y2 = j[2]
+		}
+	
+
+		obj.data = [ 
+			     [ j[0], 0 ],
+			     [ newtime, y2 ] 
+			   ]
+			  
+		dt.push(obj)
+})
+
+
+  
+$(function () {
+    var chart = new Highcharts.Chart({
+          chart: {
+            renderTo: 'container', zoomType: 'xy',   type: 'scatter'
+        },
+        colors: ['blue'],
+       
+ plotOptions: {
+                 series: { lineWidth: 2 , marker: { enabled: false }},
+                 
+              },
+tooltip: {
+            formatter: function() {
+               
+			if(this.y !=0 )
+			{
+			 	var index = this.series.xData.indexOf(this.x);
+				var nextX = this.series.xData[index-1];
+				return Highcharts.dateFormat('%e - %b - %Y', new Date(nextX)) + ', ' + this.y.toFixed(2);
+			}
+		    else{
+				return Highcharts.dateFormat('%e - %b - %Y', new Date(this.x)) + ', ' + this.y.toFixed(2);
+			}
+            }
+        },
+
+
+ yAxis: {
+          plotLines: [{
+                      value: 0,
+                      width: 2,
+                      color: 'red'
+                     }]
+        },
+
+xAxis: {
+    	  type: 'datetime',
+   dateTimeLabelFormats : { year: '%e %b %Y', },
+},
+      series: dt
+         });
+
+     });
+</script>
